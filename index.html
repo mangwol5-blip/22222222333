@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>보드게임 대여함</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --card:#fffcf0; --ink:#5b4330; --muted:#9a8366;
+    --pink:#f58fae; --mint:#6cc56a; --sky:#5cb6e8; --sun:#ffc94d; --grape:#b48ad9; --red:#ef6b5b;
+    --wood:#c98f55; --wood2:#e2b67c; --edge:#e9d8b0;
+    --line:#eadcb8; --shadow:0 6px 0 #dcc89c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{min-height:100%}
+  body{
+    font-family:'Jua','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    color:var(--ink);
+    background:linear-gradient(180deg,#9fdcff 0%,#c8eeff 45%,#e6f9d8 100%) fixed;
+    min-height:100vh;
+    -webkit-user-select:none;user-select:none;
+  }
+  input{-webkit-user-select:text;user-select:text}
+  #mReturn .box{padding:16px 18px}
+  #mReturn .box .emo{font-size:44px}
+  #mReturn .box p{margin-bottom:8px}
+  #mReturn .checks label{padding:9px 12px;font-size:18px}
+  #mReturn .acts{margin-top:10px}
+  @media (max-height:700px){ #mReturn .box .emo{display:none} #pad{height:150px!important} }
+  .wrap{max-width:1000px;margin:0 auto;padding:16px 16px 60px;position:relative;z-index:1}
+
+  /* 풍경 (오리지널 일러스트) */
+  .scene{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .scene svg{position:absolute;left:0;bottom:0;width:100%;height:46vh;min-height:220px}
+  .cloud{position:absolute;background:#fff;border-radius:999px;opacity:.9;animation:drift linear infinite}
+  .cloud::before,.cloud::after{content:"";position:absolute;background:#fff;border-radius:50%}
+  .cloud::before{width:55%;height:160%;left:15%;bottom:20%}
+  .cloud::after{width:40%;height:130%;right:12%;bottom:25%}
+  .c1{width:130px;height:38px;top:9%;left:-160px;animation-duration:70s}
+  .c2{width:90px;height:28px;top:22%;left:-120px;animation-duration:95s;animation-delay:-40s}
+  .c3{width:160px;height:44px;top:4%;left:-200px;animation-duration:120s;animation-delay:-80s}
+  @keyframes drift{to{transform:translateX(calc(100vw + 260px))}}
+
+  /* 나무 간판 헤더 */
+  header{text-align:center;padding:6px 0 18px;position:relative}
+  .sign{
+    display:inline-block;position:relative;padding:14px 30px 12px;border-radius:26px;
+    background:repeating-linear-gradient(180deg,var(--wood2) 0 14px,#d9a96d 14px 16px);
+    border:5px solid #a8743f;box-shadow:0 7px 0 #8a5c2f;
+  }
+  .sign::before,.sign::after{
+    content:"";position:absolute;bottom:-26px;width:14px;height:26px;background:#a8743f;border-radius:0 0 6px 6px;z-index:-1
+  }
+  .sign::before{left:24%} .sign::after{right:24%}
+  header h1{font-size:clamp(28px,6vw,46px);font-weight:400;letter-spacing:1px;color:#fffbea;text-shadow:0 3px 0 #8a5c2f}
+  header h1 span{display:inline-block;animation:bob 2.4s ease-in-out infinite}
+  header p{
+    display:inline-block;margin-top:24px;font-size:clamp(15px,3vw,19px);color:var(--ink);
+    background:var(--card);padding:8px 18px;border-radius:999px;border:3px solid var(--edge);position:relative
+  }
+  header p::before{
+    content:"";position:absolute;top:-12px;left:50%;margin-left:-10px;border:10px solid transparent;border-bottom-color:var(--edge);border-top:0
+  }
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-6px) rotate(6deg)}}
+
+  /* 탭 */
+  nav{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:16px 0 18px;position:sticky;top:8px;z-index:5}
+  nav button{
+    font-family:inherit;font-size:clamp(15px,3.4vw,21px);border:none;border-radius:18px;
+    padding:14px 4px;background:var(--card);color:var(--ink);cursor:pointer;box-shadow:var(--shadow);
+    transition:transform .1s;position:relative;border:3px solid var(--edge);border-radius:22px 22px 22px 8px;
+  }
+  nav button:active{transform:translateY(3px);box-shadow:0 3px 0 #dcc89c}
+  nav button.on{background:var(--sky);color:#fff;border-color:#3f97c9;box-shadow:0 6px 0 #3f97c9}
+  nav button[data-tab="using"].on{background:var(--pink);border-color:#d66d8e;box-shadow:0 6px 0 #d66d8e}
+  nav button[data-tab="history"].on{background:var(--grape);border-color:#9068b8;box-shadow:0 6px 0 #9068b8}
+  nav button[data-tab="teacher"].on{background:var(--mint);border-color:#4c9f4a;box-shadow:0 6px 0 #4c9f4a}
+  .badge{
+    position:absolute;top:-8px;right:-4px;background:var(--red);color:#fff;border-radius:999px;
+    min-width:28px;height:28px;font-size:17px;line-height:28px;padding:0 6px;border:3px solid #fff;
+  }
+  .badge:empty{display:none}
+
+  section{display:none}
+  section.on{display:block;animation:fade .25s}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  h2{
+    font-size:clamp(20px,4.3vw,26px);font-weight:400;margin:6px 0 14px;display:inline-block;
+    background:#7cc96f;color:#fff;padding:6px 18px 6px 14px;border-radius:14px 26px 26px 14px;
+    box-shadow:0 4px 0 #4c9f4a;text-shadow:0 2px 0 rgba(0,0,0,.12)
+  }
+  h2::before{content:"🍃 "}
+
+  /* 게임 카드 */
+  .games{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+  .game{
+    font-family:inherit;border:none;background:var(--card);border-radius:24px;padding:18px 10px 14px;
+    box-shadow:var(--shadow);cursor:pointer;text-align:center;color:var(--ink);
+    display:flex;flex-direction:column;align-items:center;gap:6px;min-height:150px;justify-content:center;
+    border:4px solid var(--edge);transition:transform .1s;border-radius:30px 30px 30px 12px;
+  }
+  .game:hover{transform:translateY(-3px) rotate(-1deg)}
+  .game:active{transform:translateY(3px)}
+  .game .emo{font-size:52px;line-height:1}
+  .game .nm{font-size:21px;word-break:keep-all}
+  .game .st{font-size:15px;border-radius:999px;padding:3px 12px;background:#e3f6d6;color:#3f8a3c}
+  .game.busy{background:#fff0f4;border-color:#ffd0dd;cursor:not-allowed}
+  .game.busy .emo{filter:grayscale(.6);opacity:.6}
+  .game.busy .st{background:#ffe0e8;color:#e0557d}
+
+  /* 리스트 카드 */
+  .list{display:flex;flex-direction:column;gap:12px}
+  .rec{
+    background:var(--card);border-radius:26px 26px 26px 10px;border:3px solid var(--edge);padding:14px 16px;box-shadow:var(--shadow);
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  }
+  .rec .emo{font-size:42px}
+  .rec .info{flex:1;min-width:160px}
+  .rec .t1{font-size:22px}
+  .rec .t2{font-size:16px;color:var(--muted);margin-top:3px}
+  .rec.late{border:4px solid #ffb3b3;background:#fff5f5}
+  .rec.late .t2{color:#d9534f}
+
+  .btn{
+    font-family:inherit;border:none;border-radius:18px;padding:14px 22px;font-size:20px;cursor:pointer;
+    color:#fff;background:var(--sky);box-shadow:0 5px 0 rgba(0,0,0,.15);transition:transform .1s;
+  }
+  .btn:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.15)}
+  .btn.pink{background:var(--pink)} .btn.mint{background:var(--mint)} .btn.grape{background:var(--grape)}
+  .btn.sun{background:var(--sun);color:#5a4300} .btn.red{background:var(--red)}
+  .btn.ghost{background:#efe4c8;color:var(--ink)}
+  .btn.small{padding:9px 14px;font-size:16px;border-radius:14px}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+
+  .empty{text-align:center;color:var(--muted);font-size:20px;padding:40px 10px;background:rgba(255,252,240,.85);border:3px dashed var(--edge);border-radius:26px}
+  .empty div{font-size:56px;margin-bottom:8px}
+
+  /* 기록 표 */
+  .tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  .tools select,.tools input{
+    font-family:inherit;font-size:17px;padding:10px 12px;border-radius:14px;border:3px solid var(--line);background:#fff;color:var(--ink);
+  }
+  .hist{display:flex;flex-direction:column;gap:10px}
+  .day{font-size:19px;color:var(--grape);margin:14px 4px 2px}
+  .hrow{
+    background:var(--card);border-radius:22px 22px 22px 8px;padding:12px 14px;box-shadow:0 4px 0 #dcc89c;border:3px solid var(--edge);
+    display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;
+  }
+  .hrow .emo{font-size:34px}
+  .hrow .a{font-size:19px}
+  .hrow .b{font-size:15px;color:var(--muted);margin-top:2px}
+  .hrow .sig{
+    width:150px;height:62px;border:2px dashed var(--line);border-radius:12px;background:#fffef8;
+    display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--muted);overflow:hidden
+  }
+  .hrow .sig img{max-width:100%;max-height:100%}
+  .hrow.open .sig{border-color:#ffb3b3;color:#e0557d;background:#fff5f5}
+  .tag{display:inline-block;font-size:14px;padding:2px 9px;border-radius:999px;margin-left:4px;vertical-align:middle}
+  .tag.ok{background:#e8fbf4;color:#22a07c}
+  .tag.no{background:#ffe0e8;color:#e0557d}
+
+  /* 선생님 */
+  .panel{background:var(--card);border:3px solid var(--edge);border-radius:26px;padding:18px;box-shadow:var(--shadow);margin-bottom:16px}
+  .panel h3{font-size:22px;font-weight:400;margin-bottom:12px}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  .row input{flex:1;min-width:140px}
+  input.big{
+    font-family:inherit;font-size:22px;padding:14px 16px;border-radius:16px;border:3px solid var(--line);
+    width:100%;color:var(--ink);outline:none;background:#fff;
+  }
+  input.big:focus{border-color:var(--sky)}
+  input.emoji{max-width:90px;text-align:center;flex:0 0 90px;min-width:0}
+  .glist{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+  .gitem{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;background:#f7f0dc}
+  .gitem .emo{font-size:30px}
+  .gitem .nm{flex:1;font-size:20px}
+  .note{color:var(--muted);font-size:15px;margin-top:8px;line-height:1.5}
+
+  /* 모달 */
+  .modal{
+    position:fixed;inset:0;background:rgba(59,51,85,.45);display:none;align-items:center;justify-content:center;
+    padding:16px;z-index:50;
+  }
+  .modal.on{display:flex}
+  .box{
+    background:var(--card);border:5px solid var(--edge);box-shadow:0 8px 0 #cdb583;border-radius:34px 34px 34px 14px;padding:22px 20px;width:100%;max-width:520px;max-height:94vh;overflow:auto;
+    text-align:center;animation:pop .2s;
+  }
+  @keyframes pop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+  .box .emo{font-size:64px}
+  .box h3{font-size:clamp(23px,5vw,29px);font-weight:400;margin:6px 0 4px}
+  .box p{color:var(--muted);font-size:17px;margin-bottom:14px}
+  .box .acts{display:flex;gap:10px;margin-top:16px}
+  .box .acts .btn{flex:1}
+  .checks{text-align:left;display:flex;flex-direction:column;gap:8px;margin:6px 0 12px}
+  .checks label{
+    display:flex;align-items:center;gap:12px;font-size:19px;background:#f7f0dc;padding:12px 14px;border-radius:16px;cursor:pointer;
+    border:3px solid transparent;
+  }
+  .checks label.ok{border-color:var(--mint);background:#effcf7}
+  .checks input{width:28px;height:28px;accent-color:var(--mint);flex:none}
+  .padwrap{position:relative;border:4px dashed #d9c290;border-radius:20px;background:#fffef8;touch-action:none}
+  #pad{display:block;width:100%;height:190px;border-radius:16px;touch-action:none;cursor:crosshair}
+  .padhint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#c8b388;font-size:22px;pointer-events:none}
+  .err{color:var(--red);font-size:17px;min-height:22px;margin-top:8px}
+
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(120px);background:var(--ink);color:#fff;
+    padding:14px 24px;border-radius:999px;font-size:19px;z-index:60;transition:transform .3s;max-width:calc(100% - 32px);text-align:center;
+  }
+  .toast.on{transform:translateX(-50%) translateY(0)}
+
+  @media (max-width:560px){
+    .games{grid-template-columns:repeat(2,1fr);gap:10px}
+    .game{min-height:130px;padding:14px 6px}
+    .game .emo{font-size:44px}
+    .game .nm{font-size:19px}
+    .hrow{grid-template-columns:auto 1fr}
+    .hrow .sig{grid-column:1 / -1;width:100%;height:70px}
+    .rec .btn{width:100%}
+  }
+</style>
+</head>
+<body>
+<div class="scene" aria-hidden="true">
+  <div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div>
+  <svg viewBox="0 0 1200 400" preserveAspectRatio="xMidYMax slice">
+    <!-- 먼 언덕 -->
+    <path d="M0 170 Q180 90 360 150 T720 140 T1200 120 V400 H0Z" fill="#bfe7a0"/>
+    <!-- 가까운 언덕 -->
+    <path d="M0 230 Q250 160 520 220 T1200 200 V400 H0Z" fill="#9fd77e"/>
+    <!-- 강 -->
+    <path d="M760 400 C700 340 860 300 800 250 C760 215 880 200 960 190 L1010 192 C930 210 860 225 900 255 C960 300 820 340 900 400Z" fill="#8fd3f0"/>
+    <path d="M800 330 q20 -6 40 0 M840 280 q18 -5 34 0 M880 220 q14 -4 28 0" stroke="#e9f8ff" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <!-- 앞 잔디 -->
+    <path d="M0 300 Q200 260 420 300 T760 310 L740 400 H0Z" fill="#86c964"/>
+    <path d="M920 310 Q1060 280 1200 300 V400 H900Z" fill="#86c964"/>
+    <!-- 둥근 나무 -->
+    <g><rect x="132" y="175" width="18" height="55" rx="6" fill="#a8743f"/><circle cx="141" cy="160" r="42" fill="#5fb85a"/><circle cx="118" cy="172" r="26" fill="#6cc56a"/><circle cx="162" cy="146" r="22" fill="#78cf73"/><circle cx="128" cy="150" r="6" fill="#ff8a8a"/><circle cx="158" cy="172" r="6" fill="#ff8a8a"/><circle cx="146" cy="134" r="6" fill="#ff8a8a"/></g>
+    <g><rect x="352" y="210" width="16" height="48" rx="6" fill="#a8743f"/><circle cx="360" cy="196" r="36" fill="#5fb85a"/><circle cx="380" cy="204" r="22" fill="#6cc56a"/><circle cx="344" cy="186" r="20" fill="#78cf73"/></g>
+    <g><rect x="1082" y="190" width="18" height="55" rx="6" fill="#a8743f"/><circle cx="1091" cy="174" r="44" fill="#5fb85a"/><circle cx="1066" cy="186" r="24" fill="#6cc56a"/><circle cx="1112" cy="160" r="22" fill="#78cf73"/><circle cx="1078" cy="160" r="6" fill="#ffc94d"/><circle cx="1104" cy="188" r="6" fill="#ffc94d"/></g>
+    <g><rect x="604" y="170" width="14" height="40" rx="5" fill="#a8743f"/><circle cx="611" cy="160" r="28" fill="#6cc56a"/><circle cx="626" cy="168" r="16" fill="#78cf73"/></g>
+    <!-- 꽃 -->
+    <g fill="#f58fae">
+      <circle cx="60" cy="330" r="7"/><circle cx="74" cy="322" r="7"/><circle cx="86" cy="334" r="7"/>
+      <circle cx="250" cy="350" r="7"/><circle cx="264" cy="342" r="7"/>
+      <circle cx="470" cy="330" r="7"/><circle cx="484" cy="340" r="7"/><circle cx="498" cy="328" r="7"/>
+      <circle cx="1000" cy="345" r="7"/><circle cx="1014" cy="335" r="7"/><circle cx="1150" cy="340" r="7"/>
+    </g>
+    <g fill="#fff7c2">
+      <circle cx="74" cy="330" r="4"/><circle cx="257" cy="347" r="4"/><circle cx="484" cy="333" r="4"/><circle cx="1008" cy="340" r="4"/>
+      <circle cx="170" cy="360" r="6"/><circle cx="640" cy="350" r="6"/><circle cx="1100" cy="365" r="6"/>
+    </g>
+  </svg>
+</div>
+<div class="wrap">
+  <header>
+    <div class="sign"><h1><span>🎲</span> 보드게임 대여함</h1></div><br>
+    <p>빌릴 때 이름 쓰고, 다 놀면 정리하고 서명해요!</p>
+  </header>
+
+  <nav>
+    <button data-tab="borrow" class="on">🎯 빌리기</button>
+    <button data-tab="using">⏳ 사용 중<span class="badge" id="usingBadge"></span></button>
+    <button data-tab="history">📒 기록</button>
+    <button data-tab="teacher">🍎 선생님</button>
+  </nav>
+
+  <!-- 빌리기 -->
+  <section id="borrow" class="on">
+    <h2>어떤 게임을 할까요?</h2>
+    <div class="games" id="gameGrid"></div>
+  </section>
+
+  <!-- 사용 중 -->
+  <section id="using">
+    <h2>지금 사용 중인 게임</h2>
+    <div class="list" id="usingList"></div>
+  </section>
+
+  <!-- 기록 -->
+  <section id="history">
+    <h2>지난 기록</h2>
+    <div class="tools">
+      <select id="fDate"></select>
+      <select id="fState">
+        <option value="all">전체</option>
+        <option value="done">정리 완료</option>
+        <option value="open">정리 안 됨</option>
+      </select>
+      <input id="fName" placeholder="이름 찾기" style="flex:1;min-width:120px">
+    </div>
+    <div class="hist" id="histList"></div>
+  </section>
+
+  <!-- 선생님 -->
+  <section id="teacher">
+    <div id="lockView" class="panel" style="text-align:center">
+      <h3>🔒 선생님 메뉴</h3>
+      <p class="note" style="margin-bottom:12px">게임 추가·삭제와 기록 관리는 비밀번호가 필요해요.<br>처음 비밀번호는 <b>1234</b> 입니다.</p>
+      <div class="row" style="max-width:360px;margin:0 auto">
+        <input class="big" id="pinIn" type="password" inputmode="numeric" placeholder="비밀번호">
+        <button class="btn mint" id="pinBtn">열기</button>
+      </div>
+      <div class="err" id="pinErr"></div>
+    </div>
+
+    <div id="teacherView" style="display:none">
+      <div class="panel">
+        <h3>🎲 보드게임 목록</h3>
+        <div class="row">
+          <input class="big emoji" id="newEmoji" placeholder="🎲" maxlength="4">
+          <input class="big" id="newName" placeholder="게임 이름 (예: 할리갈리)">
+          <button class="btn mint" id="addGame">추가</button>
+        </div>
+        <div class="glist" id="gList"></div>
+      </div>
+
+      <div class="panel">
+        <h3>📋 기록 관리</h3>
+        <div class="row">
+          <button class="btn sky" id="exportCsv">📥 엑셀(CSV) 내려받기</button>
+          <button class="btn red" id="clearHist">🗑 정리 완료된 기록 모두 지우기</button>
+        </div>
+        <p class="note">기록은 이 기기의 브라우저에만 저장돼요. 브라우저 방문 기록/사이트 데이터를 지우면 함께 지워지니, 가끔 CSV로 내려받아 두세요.</p>
+      </div>
+
+      <div class="panel">
+        <h3>🔑 비밀번호 바꾸기</h3>
+        <div class="row">
+          <input class="big" id="newPin" type="password" inputmode="numeric" placeholder="새 비밀번호">
+          <button class="btn grape" id="savePin">저장</button>
+          <button class="btn ghost" id="lockBtn">잠그기</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- 빌리기 모달 -->
+<div class="modal" id="mBorrow">
+  <div class="box">
+    <div class="emo" id="bEmo">🎲</div>
+    <h3 id="bTitle">게임</h3>
+    <p>빌리는 사람 이름을 써 주세요</p>
+    <input class="big" id="bName" placeholder="예: 김하늘" maxlength="20" autocomplete="off" style="text-align:center">
+    <input class="big" id="bFriends" placeholder="같이 하는 친구 (안 써도 돼요)" maxlength="60" autocomplete="off" style="text-align:center;margin-top:10px;font-size:18px">
+    <div class="err" id="bErr"></div>
+    <div class="acts">
+      <button class="btn ghost" data-close>취소</button>
+      <button class="btn pink" id="bGo">🎉 사용 시작!</button>
+    </div>
+  </div>
+</div>
+
+<!-- 정리 서명 모달 -->
+<div class="modal" id="mReturn">
+  <div class="box">
+    <div class="emo" id="rEmo">🎲</div>
+    <h3 id="rTitle">정리했나요?</h3>
+    <p id="rSub"></p>
+    <div class="checks" id="rChecks">
+      <label><input type="checkbox"> 🧩 조각·카드를 빠짐없이 넣었어요</label>
+      <label><input type="checkbox"> 📦 상자 뚜껑을 잘 닫았어요</label>
+      <label><input type="checkbox"> 🏠 제자리에 갖다 놓았어요</label>
+    </div>
+    <p style="margin-bottom:6px">✍️ 여기에 손가락이나 마우스로 서명해요</p>
+    <div class="padwrap">
+      <canvas id="pad"></canvas>
+      <div class="padhint" id="padHint">여기에 서명</div>
+    </div>
+    <div style="text-align:right;margin-top:8px"><button class="btn ghost small" id="padClear">↺ 다시 쓰기</button></div>
+    <div class="err" id="rErr"></div>
+    <div class="acts">
+      <button class="btn ghost" data-close>취소</button>
+      <button class="btn mint" id="rGo">✅ 정리 완료!</button>
+    </div>
+  </div>
+</div>
+
+<!-- 서명 크게 보기 -->
+<div class="modal" id="mSig">
+  <div class="box">
+    <h3 id="sTitle">정리 서명</h3>
+    <p id="sSub"></p>
+    <img id="sImg" alt="서명" style="width:100%;border:3px dashed #d9c290;border-radius:16px;background:#fffef8">
+    <div class="acts"><button class="btn grape" data-close>닫기</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const KEY = 'boardgame-checkout-v1';
+  const DEFAULT_GAMES = [
+    ['🍓','할리갈리'],['🃏','우노'],['🧱','젠가'],['🏝️','카탄'],
+    ['🐟','루미큐브'],['🌈','도블'],['🍰','다빈치 코드'],['🐸','블로커스']
+  ];
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+  const $ = s => document.querySelector(s);
+
+  // ---------- 저장 ----------
+  let db;
+  function load(){
+    try { db = JSON.parse(localStorage.getItem(KEY)); } catch(e){ db = null; }
+    if(!db || !Array.isArray(db.games)){
+      db = { games: DEFAULT_GAMES.map(([e,n]) => ({id:uid(), emoji:e, name:n})), records: [], pin:'1234' };
+      save();
+    }
+    db.records = db.records || [];
+    db.pin = db.pin || '1234';
+  }
+  function save(){
+    try { localStorage.setItem(KEY, JSON.stringify(db)); return true; }
+    catch(e){ toast('⚠️ 저장 공간이 부족해요. 선생님 메뉴에서 오래된 기록을 지워 주세요.'); return false; }
+  }
+  load();
+
+  // ---------- 도우미 ----------
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const pad2 = n => String(n).padStart(2,'0');
+  const dKey = t => { const d = new Date(t); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); };
+  const dLabel = t => { const d = new Date(t); return (d.getMonth()+1)+'월 '+d.getDate()+'일 ('+'일월화수목금토'[d.getDay()]+')'; };
+  const hm = t => { const d = new Date(t); const h = d.getHours(); return (h<12?'오전 ':'오후 ')+((h%12)||12)+':'+pad2(d.getMinutes()); };
+  const mins = (a,b) => Math.max(0, Math.round((b-a)/60000));
+  const dur = m => m < 60 ? m+'분' : Math.floor(m/60)+'시간 '+(m%60? (m%60)+'분':'');
+  const gameOf = r => db.games.find(g => g.id === r.gameId) || {emoji:r.emoji||'🎲', name:r.gameName};
+  const activeOf = gid => db.records.find(r => r.gameId === gid && !r.endAt);
+  const isOld = r => !r.endAt && dKey(r.startAt) !== dKey(Date.now());
+
+  var toastT;
+  function toast(msg){
+    const t = $('#toast'); t.textContent = msg; t.classList.add('on');
+    clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove('on'), 2200);
+  }
+
+  // ---------- 탭 ----------
+  let tab = 'borrow';
+  document.querySelectorAll('nav button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+  function showTab(t){
+    tab = t;
+    document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+    document.querySelectorAll('section').forEach(s => s.classList.toggle('on', s.id === t));
+    render();
+  }
+
+  // ---------- 렌더 ----------
+  function render(){
+    const open = db.records.filter(r => !r.endAt);
+    $('#usingBadge').textContent = open.length || '';
+    if(tab==='borrow') renderGames();
+    if(tab==='using') renderUsing();
+    if(tab==='history') renderHistory();
+    if(tab==='teacher') renderTeacher();
+  }
+
+  function renderGames(){
+    const g = $('#gameGrid');
+    if(!db.games.length){
+      g.innerHTML = '<div class="empty" style="grid-column:1/-1"><div>📦</div>아직 게임이 없어요.<br>선생님 메뉴에서 추가해 주세요.</div>';
+      return;
+    }
+    g.innerHTML = db.games.map(x => {
+      const a = activeOf(x.id);
+      return `<button class="game ${a?'busy':''}" data-id="${x.id}">
+        <span class="emo">${esc(x.emoji)}</span>
+        <span class="nm">${esc(x.name)}</span>
+        <span class="st">${a ? '사용 중 · '+esc(a.name) : '빌릴 수 있어요'}</span>
+      </button>`;
+    }).join('');
+    g.querySelectorAll('.game').forEach(b => b.onclick = () => {
+      const a = activeOf(b.dataset.id);
+      if(a){ toast(`${a.name} 친구가 사용 중이에요. 정리 서명 후에 빌릴 수 있어요!`); return; }
+      openBorrow(b.dataset.id);
+    });
+  }
+
+  function renderUsing(){
+    const L = $('#usingList');
+    const open = db.records.filter(r => !r.endAt).sort((a,b)=>a.startAt-b.startAt);
+    if(!open.length){
+      L.innerHTML = '<div class="empty"><div>✨</div>지금 사용 중인 게임이 없어요.<br>모두 정리 완료!</div>';
+      return;
+    }
+    L.innerHTML = open.map(r => {
+      const g = gameOf(r), old = isOld(r);
+      return `<div class="rec ${old?'late':''}">
+        <span class="emo">${esc(g.emoji)}</span>
+        <div class="info">
+          <div class="t1">${esc(g.name)} · ${esc(r.name)}</div>
+          <div class="t2">${old ? '⚠️ '+dLabel(r.startAt)+' 부터 정리 안 됨' : hm(r.startAt)+' 시작 · '+(mins(r.startAt,Date.now())<1?'방금 시작했어요':dur(mins(r.startAt,Date.now()))+'째 사용 중')}${r.friends? ' · 함께: '+esc(r.friends):''}</div>
+        </div>
+        <button class="btn mint" data-id="${r.id}">🧹 정리하고 서명</button>
+      </div>`;
+    }).join('');
+    L.querySelectorAll('button[data-id]').forEach(b => b.onclick = () => openReturn(b.dataset.id));
+  }
+
+  function renderHistory(){
+    const sel = $('#fDate');
+    const days = [...new Set(db.records.map(r => dKey(r.startAt)))].sort().reverse();
+    const cur = sel.value || 'all';
+    sel.innerHTML = '<option value="all">모든 날짜</option>' + days.map(d => {
+      const [y,m,dd] = d.split('-'); return `<option value="${d}">${+m}월 ${+dd}일</option>`;
+    }).join('');
+    sel.value = days.includes(cur) ? cur : 'all';
+
+    const fd = sel.value, fs = $('#fState').value, fn = $('#fName').value.trim();
+    let rs = db.records.slice().sort((a,b)=>b.startAt-a.startAt);
+    if(fd!=='all') rs = rs.filter(r => dKey(r.startAt)===fd);
+    if(fs==='done') rs = rs.filter(r => r.endAt);
+    if(fs==='open') rs = rs.filter(r => !r.endAt);
+    if(fn) rs = rs.filter(r => (r.name+' '+(r.friends||'')).includes(fn));
+
+    const H = $('#histList');
+    if(!rs.length){ H.innerHTML = '<div class="empty"><div>📒</div>기록이 없어요.</div>'; return; }
+    let html = '', last = '';
+    rs.forEach(r => {
+      const k = dKey(r.startAt);
+      if(k!==last){ html += `<div class="day">📅 ${dLabel(r.startAt)}</div>`; last = k; }
+      const g = gameOf(r);
+      html += `<div class="hrow ${r.endAt?'':'open'}">
+        <span class="emo">${esc(g.emoji)}</span>
+        <div>
+          <div class="a">${esc(r.name)} · ${esc(g.name)} ${r.endAt?'<span class="tag ok">정리 완료</span>':'<span class="tag no">정리 안 됨</span>'}</div>
+          <div class="b">${hm(r.startAt)} ~ ${r.endAt? hm(r.endAt)+' ('+dur(mins(r.startAt,r.endAt))+')' : '사용 중'}${r.friends? ' · 함께: '+esc(r.friends):''}${r.closedBy? ' · '+esc(r.closedBy):''}</div>
+        </div>
+        <div class="sig" ${r.sig?`data-sig="${r.id}" style="cursor:zoom-in"`:''}>${r.sig?`<img src="${r.sig}" alt="${esc(r.name)} 서명">`:(r.endAt?'서명 없음':'서명 전')}</div>
+      </div>`;
+    });
+    H.innerHTML = html;
+    H.querySelectorAll('[data-sig]').forEach(el => el.onclick = () => {
+      const r = db.records.find(x => x.id===el.dataset.sig), g = gameOf(r);
+      $('#sTitle').textContent = `${r.name} · ${g.name}`;
+      $('#sSub').textContent = `${dLabel(r.endAt)} ${hm(r.endAt)} 정리 완료`;
+      $('#sImg').src = r.sig; openModal('#mSig');
+    });
+  }
+  $('#fDate').onchange = renderHistory; $('#fState').onchange = renderHistory; $('#fName').oninput = renderHistory;
+
+  // ---------- 모달 공통 ----------
+  function openModal(s){ $(s).classList.add('on'); }
+  function closeModals(){ document.querySelectorAll('.modal').forEach(m => m.classList.remove('on')); }
+  document.querySelectorAll('[data-close]').forEach(b => b.onclick = closeModals);
+  document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if(e.target===m) closeModals(); }));
+  document.addEventListener('keydown', e => { if(e.key==='Escape') closeModals(); });
+
+  // ---------- 빌리기 ----------
+  let bGame = null;
+  function openBorrow(gid){
+    bGame = db.games.find(g => g.id===gid);
+    $('#bEmo').textContent = bGame.emoji; $('#bTitle').textContent = bGame.name;
+    $('#bName').value = ''; $('#bFriends').value = ''; $('#bErr').textContent = '';
+    openModal('#mBorrow'); setTimeout(()=>$('#bName').focus(), 50);
+  }
+  function doBorrow(){
+    const name = $('#bName').value.trim();
+    if(!name){ $('#bErr').textContent = '이름을 꼭 써 주세요! ✏️'; $('#bName').focus(); return; }
+    if(activeOf(bGame.id)){ $('#bErr').textContent = '앗, 방금 다른 친구가 빌렸어요.'; return; }
+    db.records.push({ id:uid(), gameId:bGame.id, gameName:bGame.name, emoji:bGame.emoji,
+      name, friends:$('#bFriends').value.trim(), startAt:Date.now(), endAt:null, sig:null });
+    save(); closeModals();
+    toast(`🎉 ${name}, 재미있게 놀아요! 끝나면 꼭 정리해요.`);
+    render();
+  }
+  $('#bGo').onclick = doBorrow;
+  $('#bName').addEventListener('keydown', e => { if(e.key==='Enter') doBorrow(); });
+  $('#bFriends').addEventListener('keydown', e => { if(e.key==='Enter') doBorrow(); });
+
+  // ---------- 서명 캔버스 ----------
+  const cv = $('#pad'), ctx = cv.getContext('2d');
+  let drawing = false, inked = 0, lastP = null;
+  function sizePad(){
+    const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    cv.width = Math.round(r.width*dpr); cv.height = Math.round(r.height*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = '#3b3355';
+    inked = 0; $('#padHint').style.display = '';
+  }
+  const pt = e => { const r = cv.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; };
+  cv.addEventListener('pointerdown', e => {
+    e.preventDefault(); drawing = true; lastP = pt(e); cv.setPointerCapture(e.pointerId);
+    ctx.beginPath(); ctx.arc(lastP.x,lastP.y,2,0,Math.PI*2); ctx.fillStyle='#3b3355'; ctx.fill();
+    $('#padHint').style.display = 'none';
+  });
+  cv.addEventListener('pointermove', e => {
+    if(!drawing) return; e.preventDefault();
+    const p = pt(e);
+    ctx.beginPath(); ctx.moveTo(lastP.x,lastP.y); ctx.lineTo(p.x,p.y); ctx.stroke();
+    inked += Math.hypot(p.x-lastP.x, p.y-lastP.y); lastP = p;
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(ev => cv.addEventListener(ev, () => drawing = false));
+  $('#padClear').onclick = () => { ctx.clearRect(0,0,cv.width,cv.height); sizePad(); };
+
+  function sigData(){
+    // 저장 공간 절약: 작은 크기로 줄여서 저장
+    const w = 360, h = Math.round(w * cv.height / cv.width);
+    const c2 = document.createElement('canvas'); c2.width = w; c2.height = h;
+    const x = c2.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0,0,w,h);
+    x.drawImage(cv, 0, 0, w, h);
+    return c2.toDataURL('image/jpeg', 0.7);
+  }
+
+  // ---------- 정리 서명 ----------
+  let rRec = null;
+  function openReturn(rid){
+    rRec = db.records.find(r => r.id===rid);
+    const g = gameOf(rRec);
+    $('#rEmo').textContent = g.emoji;
+    $('#rTitle').textContent = `${g.name} 정리했나요?`;
+    $('#rSub').textContent = `${rRec.name} · ${dLabel(rRec.startAt)} ${hm(rRec.startAt)} 시작`;
+    $('#rErr').textContent = '';
+    $('#rChecks').querySelectorAll('label').forEach(l => { l.classList.remove('ok'); l.querySelector('input').checked = false; });
+    openModal('#mReturn');
+    requestAnimationFrame(sizePad);
+  }
+  $('#rChecks').querySelectorAll('input').forEach(i => i.onchange = () => i.parentElement.classList.toggle('ok', i.checked));
+  $('#rGo').onclick = () => {
+    const all = [...$('#rChecks').querySelectorAll('input')].every(i => i.checked);
+    if(!all){ $('#rErr').textContent = '정리 체크를 모두 해 주세요! ☑️'; return; }
+    if(inked < 30){ $('#rErr').textContent = '서명을 해 주세요! ✍️'; return; }
+    rRec.endAt = Date.now(); rRec.sig = sigData();
+    if(!save()){ rRec.endAt = null; rRec.sig = null; return; }
+    closeModals();
+    toast(`👏 ${rRec.name}, 깨끗하게 정리해 줘서 고마워요!`);
+    render();
+  };
+  window.addEventListener('resize', () => { if($('#mReturn').classList.contains('on') && !inked) sizePad(); });
+
+  // ---------- 선생님 ----------
+  let unlocked = false;
+  function renderTeacher(){
+    $('#lockView').style.display = unlocked ? 'none' : '';
+    $('#teacherView').style.display = unlocked ? '' : 'none';
+    if(!unlocked) return;
+    const L = $('#gList');
+    L.innerHTML = db.games.length ? db.games.map(g => `<div class="gitem">
+        <span class="emo">${esc(g.emoji)}</span><span class="nm">${esc(g.name)}${activeOf(g.id)?' <span class="tag no">사용 중</span>':''}</span>
+        <button class="btn red small" data-del="${g.id}">삭제</button></div>`).join('')
+      : '<p class="note">게임이 없어요. 위에서 추가해 주세요.</p>';
+    L.querySelectorAll('[data-del]').forEach(b => b.onclick = () => {
+      const g = db.games.find(x => x.id===b.dataset.del);
+      if(activeOf(g.id)){ toast('사용 중인 게임은 정리 후에 삭제할 수 있어요.'); return; }
+      if(!confirm(`'${g.name}'을(를) 목록에서 삭제할까요?\n(지난 기록은 그대로 남아요)`)) return;
+      db.games = db.games.filter(x => x.id!==g.id); save(); render(); toast('삭제했어요.');
+    });
+  }
+  function tryPin(){
+    if($('#pinIn').value === db.pin){ unlocked = true; $('#pinIn').value=''; $('#pinErr').textContent=''; render(); }
+    else { $('#pinErr').textContent = '비밀번호가 달라요.'; }
+  }
+  $('#pinBtn').onclick = tryPin;
+  $('#pinIn').addEventListener('keydown', e => { if(e.key==='Enter') tryPin(); });
+  $('#lockBtn').onclick = () => { unlocked = false; render(); };
+  $('#savePin').onclick = () => {
+    const p = $('#newPin').value.trim();
+    if(p.length < 4){ toast('비밀번호는 4자리 이상으로 해 주세요.'); return; }
+    db.pin = p; save(); $('#newPin').value=''; toast('🔑 비밀번호를 바꿨어요.');
+  };
+  function addGame(){
+    const name = $('#newName').value.trim(), emoji = $('#newEmoji').value.trim() || '🎲';
+    if(!name){ toast('게임 이름을 써 주세요.'); return; }
+    if(db.games.some(g => g.name===name)){ toast('이미 있는 게임이에요.'); return; }
+    db.games.push({id:uid(), emoji, name}); save();
+    $('#newName').value=''; $('#newEmoji').value=''; render(); toast(`'${name}' 추가!`);
+  }
+  $('#addGame').onclick = addGame;
+  $('#newName').addEventListener('keydown', e => { if(e.key==='Enter') addGame(); });
+
+  $('#exportCsv').onclick = () => {
+    const rows = [['날짜','게임','이름','함께한 친구','시작','정리 완료','사용 시간(분)','정리 상태']];
+    db.records.slice().sort((a,b)=>a.startAt-b.startAt).forEach(r => {
+      const g = gameOf(r);
+      rows.push([dKey(r.startAt), g.name, r.name, r.friends||'', hm(r.startAt), r.endAt?hm(r.endAt):'', r.endAt?mins(r.startAt,r.endAt):'', r.endAt?'정리 완료(서명)':'정리 안 됨']);
+    });
+    const csv = '﻿' + rows.map(r => r.map(v => '"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+    a.download = '보드게임기록_'+dKey(Date.now())+'.csv'; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  };
+  $('#clearHist').onclick = () => {
+    const n = db.records.filter(r => r.endAt).length;
+    if(!n){ toast('지울 기록이 없어요.'); return; }
+    if(!confirm(`정리 완료된 기록 ${n}개를 모두 지울까요?\n지운 기록은 되돌릴 수 없어요. (사용 중인 기록은 남아요)`)) return;
+    db.records = db.records.filter(r => !r.endAt); save(); render(); toast('기록을 지웠어요.');
+  };
+
+  // 다른 탭에서 바뀌면 반영, 사용 시간 갱신
+  window.addEventListener('storage', e => { if(e.key===KEY){ load(); render(); } });
+  setInterval(() => { if(tab==='using') renderUsing(); }, 60000);
+
+  render();
+})();
+</script>
+</body>
+</html>
